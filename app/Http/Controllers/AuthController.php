@@ -31,7 +31,7 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('api-token', ['read_only', 'full_access'], now()->addWeek())->plainTextToken;
-        
+
         Mail::to($user->email)->send(new WelcomeMail($user));
 
         return $this->successResponse(['user' => $user, 'token' => $token], 'usario creado correctamente', 201);
@@ -60,7 +60,11 @@ class AuthController extends Controller
 
             $user->tokens()->delete();
 
-            $token = $user->createToken('api-token', ['read_only', 'full_access'], now()->addWeek())->plainTextToken;
+            // si el rol es administrador entonces le doy las abilities de full_access y admin
+
+            $abilities = $user->rol === 'admin' ? ['full_access', 'admin'] : ['full_access'];
+
+            $token = $user->createToken('api-token', $abilities, now()->addWeek())->plainTextToken;
 
             return $this->successResponse(['user' => $user, 'token' => $token], 'usario logeado y token creado', 200);
         }
