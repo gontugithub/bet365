@@ -24,7 +24,8 @@ class User extends Authenticatable
 
     public function comunidades(): BelongsToMany
     {
-        return $this->belongsToMany(Comunidad::class);
+        return $this->belongsToMany(Comunidad::class)
+        ->withPivot('estado_solicitud');
     }
 
     public function comunidades_creada(): HasMany
