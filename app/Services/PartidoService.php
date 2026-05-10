@@ -18,9 +18,10 @@ class PartidoService
 
         $partidos = [];
 
-        // ahora entramos en un bucle qeu va ir leyendo cada fila 
+        // ahora entramos en un bucle qeu va ir leyendo cada fila, tambien hacemos del tiron el update y el crear partidos
+        // con updateOrCreate busco primero si existe si existe actualiza y sino los crea
         while (($fila = fgetcsv($handle)) !== false) {
-           $partidos[] = Partido::create([
+           $partidos[] = Partido::updateOrCreate(['id_event' => $fila[0]],[
                 'id_event' => $fila[0],
                 'fecha_hora_partido' => $fila[1],
                 'fase' => $fila[2],
