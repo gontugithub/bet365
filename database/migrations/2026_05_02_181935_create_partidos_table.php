@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('partidos', function (Blueprint $table) {
             $table->id();
+            $table->integer('id_event')->unique();
             $table->string('equipo_A');
             $table->string('equipo_B');
             $table->string('fase');
