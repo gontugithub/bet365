@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: mundial_app
+    container_name: mundial_app 
     restart: unless-stopped
     working_dir: /var/www
     volumes:

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('predicciones', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('partido_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('partido_id')->constrained('partidos')->onDelete('cascade');
             $table->integer('goles_eqipo_A');
             $table->integer('goles_eqipo_B');
             $table->integer('puntos_ganados');
