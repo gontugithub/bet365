@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Traits\TraitApiResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -29,8 +31,12 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('api-token', ['read_only', 'full_access'], now()->addWeek())->plainTextToken;
+        
+        Mail::to($user->email)->send(new WelcomeMail($user));
 
         return $this->successResponse(['user' => $user, 'token' => $token], 'usario creado correctamente', 201);
+
+        
 
     }
 
