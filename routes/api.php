@@ -12,3 +12,4 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::post('/importar', [PartidoController::class, 'importar'])->middleware(['auth:sanctum', 'ability:admin']);
+Route::get('/partidos', [PartidoController::class, 'index'])->middleware(['auth:sanctum']);
