@@ -11,6 +11,8 @@ class PrediccionController extends Controller
 {
     use TraitApiResponse;
 
+    
+
     public function store(Request $request){
 
         $request->validate([
@@ -34,6 +36,32 @@ class PrediccionController extends Controller
         } else{
             return $this->successResponse($response['data'], 'Predicción creada', 201);
         }
+    }
+
+    public function update(Request $request, $prediccion_id){
+
+        $request->validate([
+            'goles_equipo_A' => ['required', 'integer'],
+            'goles_equipo_B' => ['required', 'integer'],
+        ]);
+        
+        $service = new PrediccionService; 
+
+        $response = $service->editarPrediccion(
+            $prediccion_id,
+            $request->user()->id, // devuelve el modelo user de la peticion, por el token de sanctum
+            $request->goles_equipo_A,
+            $request->goles_equipo_B
+        );
+
+        if ($response['error']){
+            return $this->errorResponse($response['message'], $response['code']);
+
+        } else{
+            return $this->successResponse($response['data'], 'Predicción actualizada', 201);
+        }
+
+
     }
     
 }

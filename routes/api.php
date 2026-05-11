@@ -17,3 +17,4 @@ Route::get('/partidos', [PartidoController::class, 'index'])->middleware(['auth:
 Route::get('/partidos/fase-actual', [PartidoController::class, 'faseActualPartidos'])->middleware(['auth:sanctum']);
 
 Route::post('/predicciones', [PrediccionController::class, 'store'])->middleware('auth:sanctum');
+Route::put('/predicciones/{id}', [PrediccionController::class, 'update'])->middleware('auth:sanctum');

@@ -54,5 +54,33 @@ class PrediccionService
 
     }
 
+
+    public function editarPrediccion($prediccion_id, $user_id, $goles_equipo_A, $goles_equipo_B){
+
+        $prediccion = Prediccion::findOrFail($prediccion_id);
+
+        $partido = $prediccion->partido; //  que es lo mismo Partido::findOrFail($prediccion->partido_id);
+
+        $hoy = Carbon::now();
+        $fechaPartido = Carbon::parse($partido->fecha_hora_partido);
+
+        if ($hoy->greaterThanOrEqualTo($fechaPartido->subDay())) {
+            return ['error' => true, 'message' => 'Ya no puedes predecir este partido', 'code' => 422];
+        }
+
+        if ($prediccion->user_id !== $user_id) {
+
+            return ['error' => true, 'message' => 'No tienes permiso para editar esta predicción', 'code' => 403];
+
+        }
+
+        $prediccion->update([
+            'goles_equipo_A' => $goles_equipo_A,
+            'goles_equipo_B' => $goles_equipo_B
+        ]);
+
+        return ['error' => false, 'data' => $prediccion];
+
+    }
     
 }
