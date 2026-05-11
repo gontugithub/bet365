@@ -173,6 +173,16 @@ ADMIN_PASSWORD=tupassword123
 | POST | `/api/predicciones` | Auth | Crear una predicción |
 | PUT | `/api/predicciones/{id}` | Auth | Editar una predicción |
 
+### Comunidades
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| POST | `/api/comunidades` | Auth | Crear una comunidad |
+| GET | `/api/comunidades/{id}` | Auth (miembro) | Ver miembros de la comunidad |
+| POST | `/api/comunidades/solicitar` | Auth | Solicitar unirse con código |
+| PUT | `/api/comunidades/{id}/aceptar/{user_id}` | Auth (creador) | Aceptar solicitud |
+| DELETE | `/api/comunidades/{id}/miembros/{user_id}` | Auth (creador) | Eliminar miembro |
+
 ### Estructura de respuesta uniforme
 
 Todos los endpoints devuelven siempre esta estructura:
@@ -894,3 +904,83 @@ if ($prediccion->user_id !== $user_id) {
 - `401 Unauthorized` — no hay token o es inválido
 - `403 Forbidden` — hay token pero no tienes permiso para ese recurso
 - `404 Not Found` — el recurso no existe
+
+
+---
+
+### Relaciones N:M y tabla pivote
+
+Las relaciones **muchos a muchos** (N:M) se gestionan en Laravel con `belongsToMany` y una tabla pivote intermedia.
+
+En nuestro proyecto, un usuario puede pertenecer a muchas comunidades y una comunidad puede tener muchos usuarios — relación N:M a través de `comunidad_user`.
+
+**Métodos de Eloquent para relaciones N:M:**
+
+```php
+// attach() — añade un registro en la tabla pivote
+$comunidad->users()->attach($user_id, ['estado_solicitud' => 'pendiente']);
+// Inserta: comunidad_id=X, user_id=Y, estado_solicitud=pendiente
+
+// detach() — elimina un registro de la tabla pivote
+$comunidad->users()->detach($user_id);
+// Elimina la fila donde comunidad_id=X y user_id=Y
+
+// updateExistingPivot() — actualiza campos extra de la tabla pivote
+$comunidad->users()->updateExistingPivot($user_id, ['estado_solicitud' => 'aceptado']);
+// Actualiza estado_solicitud donde comunidad_id=X y user_id=Y
+
+// wherePivot() — filtra por campos de la tabla pivote
+$comunidad->users()->wherePivot('estado_solicitud', 'pendiente')->exists();
+// Busca usuarios con estado_solicitud=pendiente en esa comunidad
+```
+
+**`withPivot()`** — necesario en la relación del modelo para que Eloquent incluya los campos extra de la tabla pivote:
+```php
+public function users(): BelongsToMany
+{
+    return $this->belongsToMany(User::class)
+        ->withPivot('estado_solicitud'); // sin esto, estado_solicitud no aparece
+}
+```
+
+---
+
+### Generación de códigos únicos
+
+Para generar el código único de cada comunidad usamos un bucle `do...while` que garantiza que el código no existe antes de usarlo:
+
+```php
+use Illuminate\Support\Str;
+
+do {
+    $codigo = strtoupper(Str::random(6)); // genera string aleatorio de 6 chars en mayúsculas
+} while (Comunidad::where('codigo', $codigo)->exists()); // repite si ya existe
+```
+
+**`do...while` vs `while`:**
+- `while` — comprueba la condición ANTES de ejecutar el bloque (puede no ejecutarse nunca)
+- `do...while` — ejecuta el bloque PRIMERO y luego comprueba (siempre se ejecuta al menos una vez)
+
+Para generar un código siempre necesitas ejecutar el bloque al menos una vez, por eso usamos `do...while`.
+
+**`Str::random(6)`** — genera una cadena aleatoria de 6 caracteres alfanuméricos.
+**`strtoupper()`** — convierte la cadena a mayúsculas.
+**`exists()`** — ejecuta la query y devuelve `true` o `false`.
+
+---
+
+### Carga de relaciones con `with()`
+
+Para cargar una relación junto con el modelo principal en una sola query se usa `with()`:
+
+```php
+// Sin with() — hace 2 queries (N+1 problem)
+$comunidad = Comunidad::findOrFail($id);
+$comunidad->users; // segunda query aquí
+
+// Con with() — hace 1 sola query optimizada
+$comunidad = Comunidad::with('users')->findOrFail($id);
+// users ya viene cargado, no hace segunda query
+```
+
+El **problema N+1** ocurre cuando cargas una colección y accedes a una relación en un bucle — hace una query por cada elemento. `with()` lo soluciona cargando todo de una vez.
