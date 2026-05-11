@@ -26,4 +26,5 @@ Route::post('/comunidades/unirse', [ComunidadController::class, 'solicitar'])->m
 Route::put('/comunidades/{comunidad_id}/aceptar/{user_id}', [ComunidadController::class, 'aceptar'])->middleware('auth:sanctum');
 Route::delete('/comunidades/{comunidad_id}/miembros/{user_id}', [ComunidadController::class, 'eliminar'])->middleware('auth:sanctum');
 Route::get('/comunidades/{comunidad_id}', [ComunidadController::class, 'show'])->middleware('auth:sanctum');
+Route::get('/comunidades/{comunidad_id}/ranking', [ComunidadController::class, 'ranking'])->middleware('auth:sanctum');
 

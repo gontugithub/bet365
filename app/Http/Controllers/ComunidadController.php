@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comunidad;
+use App\Models\Prediccion;
 use App\Services\ComunidadService;
 use App\Traits\TraitApiResponse;
 use Illuminate\Http\Request;
@@ -110,7 +111,39 @@ class ComunidadController extends Controller
 
         return $this->successResponse($comunidad, 'Comunidad encontrada', 200);
     }
-    
+
+    public function ranking(Request $request, $comunidad_id){
+
+
+        $comunidad = Comunidad::findOrFail($comunidad_id);
+
+        $esMiembro = $comunidad->users()
+                ->where('user_id', $request->user()->id)
+                ->wherePivot('estado_solicitud', 'aceptado')
+                ->exists();
+
+        $esCreador = $comunidad->creador_id === $request->user()->id;
+
+        if (!$esMiembro && !$esCreador) {
+            return $this->errorResponse('No tienes acceso a esta comunidad', 403);
+        }
+
+        $miembros = $comunidad->users()
+                ->wherePivot('estado_solicitud', 'aceptado')
+                ->get();
+
+        $ranking = $miembros->map(function($miembro) {
+
+        return [
+            'nombre' => $miembro->name,
+            'puntos' => (int) Prediccion::where('user_id', $miembro->id)->sum('puntos_ganados')
+        ];
+        })->sortByDesc('puntos')->values();
+
+        return $this->successResponse($ranking, 'Ranking de la comunidad', 200);
+
+    }
+        
 
 
 }

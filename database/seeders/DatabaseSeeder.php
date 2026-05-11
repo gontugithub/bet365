@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
             "name"=> "Ivan santamaria",
             "email"=> "ivanmail@gmail.com",
             "password"=> "pass123456",
-            'rol' => "admin"
+            'rol' => "usuario"
         ]);
     }
 }
