@@ -22,6 +22,10 @@
    - [Services](#services)
    - [Mailables y Mailpit](#mailables-y-mailpit)
    - [Importación de CSV](#importación-de-csv)
+   - [Query Builder y filtros opcionales](#query-builder-y-filtros-opcionales)
+   - [Carbon: manejo de fechas](#carbon-manejo-de-fechas)
+   - [Constructor del Controller](#constructor-del-controller)
+   - [Seguridad en endpoints](#seguridad-en-endpoints)
 
 ---
 
@@ -113,8 +117,8 @@ ADMIN_PASSWORD=tupassword123
 | equipo_B | string | |
 | fase | string | Round 1, Round 2... |
 | fecha_hora_partido | datetime | |
-| goles_equipo_A | integer | nullable (partido no jugado) |
-| goles_equipo_B | integer | nullable (partido no jugado) |
+| goles_eqipo_A | integer | nullable (partido no jugado) |
+| goles_eqipo_B | integer | nullable (partido no jugado) |
 
 **`comunidades`**
 | Campo | Tipo | Notas |
@@ -137,8 +141,8 @@ ADMIN_PASSWORD=tupassword123
 | id | bigint PK | |
 | user_id | FK → users | |
 | partido_id | FK → partidos | |
-| goles_equipo_A | integer | predicción del usuario |
-| goles_equipo_B | integer | predicción del usuario |
+| goles_eqipo_A | integer | predicción del usuario |
+| goles_eqipo_B | integer | predicción del usuario |
 | puntos_ganados | integer | nullable, se calcula después |
 
 ---
@@ -157,7 +161,17 @@ ADMIN_PASSWORD=tupassword123
 
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
+| GET | `/api/partidos` | Auth | Listar partidos (filtros: `?fase=` y `?equipo=`) |
+| GET | `/api/partidos/fase-actual` | Auth | Ver partidos de la fase actual |
 | POST | `/api/importar` | Admin | Importa/actualiza partidos desde CSV |
+
+### Predicciones
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/api/predicciones` | Auth | Ver todas mis predicciones |
+| POST | `/api/predicciones` | Auth | Crear una predicción |
+| PUT | `/api/predicciones/{id}` | Auth | Editar una predicción |
 
 ### Estructura de respuesta uniforme
 
@@ -388,7 +402,7 @@ class Partido extends Model
 {
     // $fillable: campos que se pueden rellenar con create() o update()
     // Sin esto, Laravel bloquea la creación masiva por seguridad (Mass Assignment Protection)
-    protected $fillable = ['id_event', 'equipo_A', 'equipo_B', 'fase', 'fecha_hora_partido', 'goles_equipo_A', 'goles_equipo_B'];
+    protected $fillable = ['id_event', 'equipo_A', 'equipo_B', 'fase', 'fecha_hora_partido', 'goles_eqipo_A', 'goles_eqipo_B'];
 
     // $hidden: campos que NO aparecen en las respuestas JSON
     protected $hidden = ['password', 'remember_token'];
@@ -472,7 +486,7 @@ return new class extends Migration
             $table->string('equipo_A');
             $table->string('fase');
             $table->dateTime('fecha_hora_partido');
-            $table->integer('goles_equipo_A')->nullable(); // nullable: puede ser null
+            $table->integer('goles_eqipo_A')->nullable(); // nullable: puede ser null
             $table->foreignId('user_id')               // foreign key
                   ->constrained('users')               // apunta a tabla users
                   ->onDelete('cascade');               // si se borra el user, se borran sus registros
@@ -586,9 +600,9 @@ class PartidoService
                     'fecha_hora_partido' => $fila[1],
                     'fase'               => $fila[2],
                     'equipo_A'           => $fila[3],
-                    'goles_equipo_A'      => $fila[4] !== '' ? $fila[4] : null,
+                    'goles_eqipo_A'      => $fila[4] !== '' ? $fila[4] : null,
                     'equipo_B'           => $fila[5],
-                    'goles_equipo_B'      => $fila[6] !== '' ? $fila[6] : null,
+                    'goles_eqipo_B'      => $fila[6] !== '' ? $fila[6] : null,
                 ]
             );
         }
@@ -742,7 +756,7 @@ Partido::updateOrCreate(
     ['id_event' => $fila[0]],  // busca por este campo
     [                           // si lo encuentra: actualiza estos campos
         'equipo_A' => $fila[3], // si no lo encuentra: los crea
-        'goles_equipo_A' => $fila[4] !== '' ? $fila[4] : null,
+        'goles_eqipo_A' => $fila[4] !== '' ? $fila[4] : null,
     ]
 );
 ```
@@ -750,3 +764,133 @@ Partido::updateOrCreate(
 Esto permite usar el **mismo endpoint** tanto para importar partidos nuevos como para actualizar resultados — simplemente importando el CSV actualizado de thesportsdb.
 
 ---
+
+*Documento generado durante el desarrollo del proyecto — Mayo 2026*
+
+---
+
+### Query Builder y filtros opcionales
+
+El **Query Builder** de Laravel permite construir consultas SQL de forma progresiva sin ejecutarlas hasta el final. Es útil cuando necesitas aplicar filtros opcionales según los parámetros que lleguen en la request.
+
+**`Modelo::query()`** — inicia un constructor de consulta sin ejecutarla:
+```php
+$query = Partido::query(); // todavía no va a la BD
+```
+
+**Añadir filtros opcionales:**
+```php
+if ($request->has('fase')) {
+    $query->where('fase', $request->fase);
+}
+
+// orWhere: busca en dos columnas a la vez
+if ($request->has('equipo')) {
+    $query->where('equipo_A', $request->equipo)
+          ->orWhere('equipo_B', $request->equipo);
+}
+
+$partidos = $query->get(); // AHORA ejecuta la query con todos los filtros
+```
+
+**Uso en la URL:**
+```
+GET /partidos                    → todos los partidos
+GET /partidos?fase=Round 1       → solo partidos de Round 1
+GET /partidos?equipo=Spain       → partidos donde Spain es equipo_A o equipo_B
+```
+
+**`value('campo')`** — devuelve directamente el valor de un campo del primer resultado:
+```php
+// En una sola línea, sin devolver el modelo completo
+$fase = Partido::whereNull('goles_equipo_A')
+               ->orderBy('fecha_hora_partido', 'asc')
+               ->value('fase');
+```
+
+---
+
+### Carbon: manejo de fechas
+
+**Carbon** es la librería de fechas de Laravel. Viene incluida y permite comparar, sumar y restar fechas de forma muy sencilla.
+
+```php
+use Carbon\Carbon;
+
+$hoy = Carbon::now();                                        // fecha y hora actual
+$fechaPartido = Carbon::parse($partido->fecha_hora_partido); // parsear string a Carbon
+$diaAntes = $fechaPartido->subDay();                         // restar un día
+
+// Comparar fechas
+$hoy->greaterThanOrEqualTo($diaAntes); // ¿hoy es mayor o igual que el día anterior?
+$hoy->lessThan($fechaPartido);          // ¿hoy es antes del partido?
+```
+
+**Uso en nuestro proyecto** — bloquear predicciones el día del partido:
+```php
+$hoy = Carbon::now();
+$fechaPartido = Carbon::parse($partido->fecha_hora_partido);
+
+if ($hoy->greaterThanOrEqualTo($fechaPartido->subDay())) {
+    return ['error' => true, 'message' => 'Ya no puedes predecir este partido', 'code' => 422];
+}
+```
+
+> ⚠️ `subDay()` modifica la fecha original. Si necesitas usarla después, usa `copy()->subDay()`.
+
+---
+
+### Constructor del Controller
+
+En vez de instanciar un Service en cada método, puedes instanciarlo una sola vez en el constructor:
+
+```php
+class PrediccionController extends Controller
+{
+    use TraitApiResponse;
+
+    private PrediccionService $service;
+
+    public function __construct()
+    {
+        $this->service = new PrediccionService(); // una sola vez
+    }
+
+    public function store(Request $request)
+    {
+        $this->service->crearPrediccion(...); // reutilizamos
+    }
+
+    public function update(Request $request, $id)
+    {
+        $this->service->editarPrediccion(...); // reutilizamos
+    }
+}
+```
+
+---
+
+### Seguridad en endpoints
+
+**1. Nunca confíes en el `user_id` del body** — obtenerlo siempre del token:
+```php
+// Inseguro ❌ — el usuario podría mandar user_id de otro usuario
+Prediccion::create(['user_id' => $request->user_id, ...]);
+
+// Seguro ✅ — viene del token de Sanctum, no se puede falsificar
+Prediccion::create(['user_id' => $request->user()->id, ...]);
+```
+
+**2. Verifica que el recurso pertenece al usuario** antes de editar o eliminar:
+```php
+$prediccion = Prediccion::findOrFail($prediccion_id);
+
+if ($prediccion->user_id !== $user_id) {
+    return ['error' => true, 'message' => 'No tienes permiso', 'code' => 403];
+}
+```
+
+**Códigos HTTP de seguridad:**
+- `401 Unauthorized` — no hay token o es inválido
+- `403 Forbidden` — hay token pero no tienes permiso para ese recurso
+- `404 Not Found` — el recurso no existe
