@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PartidoController;
+use App\Http\Controllers\PrediccionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,3 +14,4 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 Route::post('/importar', [PartidoController::class, 'importar'])->middleware(['auth:sanctum', 'ability:admin']);
 Route::get('/partidos', [PartidoController::class, 'index'])->middleware(['auth:sanctum']);
+Route::get('/partidos/fase-actual', [PartidoController::class, 'faseActualPartidos'])->middleware(['auth:sanctum']);

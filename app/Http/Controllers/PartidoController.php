@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Partido;
 use App\Services\PartidoService;
+use App\Services\PrediccionService;
 use App\Traits\TraitApiResponse;
 use Illuminate\Http\Request;
 
@@ -41,5 +42,16 @@ class PartidoController extends Controller
 
         return $this->successResponse($partidos, 'Soliciutd partidos', 200);
 
+    }
+
+    public function faseActualPartidos(){
+
+        $service = new PrediccionService();
+
+        $fase = $service->comprobarFaseActual();
+
+        $partidosFaseActual = Partido::query()->where('fase', $fase)->get();
+
+        return $this->successResponse($partidosFaseActual, 'Soliciutd partidos', 200);
     }
 }
