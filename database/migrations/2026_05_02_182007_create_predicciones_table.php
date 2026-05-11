@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('partido_id')->constrained('partidos')->onDelete('cascade');
-            $table->integer('goles_eqipo_A');
-            $table->integer('goles_eqipo_B');
-            $table->integer('puntos_ganados');
+            $table->integer('goles_equipo_A')->nullable();
+            $table->integer('goles_equipo_B')->nullable();
+            $table->integer('puntos_ganados')->nullable();
             $table->timestamps();
         });
     }

@@ -113,8 +113,8 @@ ADMIN_PASSWORD=tupassword123
 | equipo_B | string | |
 | fase | string | Round 1, Round 2... |
 | fecha_hora_partido | datetime | |
-| goles_eqipo_A | integer | nullable (partido no jugado) |
-| goles_eqipo_B | integer | nullable (partido no jugado) |
+| goles_equipo_A | integer | nullable (partido no jugado) |
+| goles_equipo_B | integer | nullable (partido no jugado) |
 
 **`comunidades`**
 | Campo | Tipo | Notas |
@@ -137,8 +137,8 @@ ADMIN_PASSWORD=tupassword123
 | id | bigint PK | |
 | user_id | FK → users | |
 | partido_id | FK → partidos | |
-| goles_eqipo_A | integer | predicción del usuario |
-| goles_eqipo_B | integer | predicción del usuario |
+| goles_equipo_A | integer | predicción del usuario |
+| goles_equipo_B | integer | predicción del usuario |
 | puntos_ganados | integer | nullable, se calcula después |
 
 ---
@@ -388,7 +388,7 @@ class Partido extends Model
 {
     // $fillable: campos que se pueden rellenar con create() o update()
     // Sin esto, Laravel bloquea la creación masiva por seguridad (Mass Assignment Protection)
-    protected $fillable = ['id_event', 'equipo_A', 'equipo_B', 'fase', 'fecha_hora_partido', 'goles_eqipo_A', 'goles_eqipo_B'];
+    protected $fillable = ['id_event', 'equipo_A', 'equipo_B', 'fase', 'fecha_hora_partido', 'goles_equipo_A', 'goles_equipo_B'];
 
     // $hidden: campos que NO aparecen en las respuestas JSON
     protected $hidden = ['password', 'remember_token'];
@@ -472,7 +472,7 @@ return new class extends Migration
             $table->string('equipo_A');
             $table->string('fase');
             $table->dateTime('fecha_hora_partido');
-            $table->integer('goles_eqipo_A')->nullable(); // nullable: puede ser null
+            $table->integer('goles_equipo_A')->nullable(); // nullable: puede ser null
             $table->foreignId('user_id')               // foreign key
                   ->constrained('users')               // apunta a tabla users
                   ->onDelete('cascade');               // si se borra el user, se borran sus registros
@@ -586,9 +586,9 @@ class PartidoService
                     'fecha_hora_partido' => $fila[1],
                     'fase'               => $fila[2],
                     'equipo_A'           => $fila[3],
-                    'goles_eqipo_A'      => $fila[4] !== '' ? $fila[4] : null,
+                    'goles_equipo_A'      => $fila[4] !== '' ? $fila[4] : null,
                     'equipo_B'           => $fila[5],
-                    'goles_eqipo_B'      => $fila[6] !== '' ? $fila[6] : null,
+                    'goles_equipo_B'      => $fila[6] !== '' ? $fila[6] : null,
                 ]
             );
         }
@@ -742,7 +742,7 @@ Partido::updateOrCreate(
     ['id_event' => $fila[0]],  // busca por este campo
     [                           // si lo encuentra: actualiza estos campos
         'equipo_A' => $fila[3], // si no lo encuentra: los crea
-        'goles_eqipo_A' => $fila[4] !== '' ? $fila[4] : null,
+        'goles_equipo_A' => $fila[4] !== '' ? $fila[4] : null,
     ]
 );
 ```

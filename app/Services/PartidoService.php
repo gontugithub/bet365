@@ -27,9 +27,9 @@ class PartidoService
                 'fase' => $fila[2],
                 'equipo_A' => $fila[3],
                 // para evitar que nos de error la cadena vacia ponemos un null
-                'goles_eqipo_A' => $fila[4]!== '' ? $fila[4] : null,
+                'goles_equipo_A' => $fila[4]!== '' ? $fila[4] : null,
                 'equipo_B' => $fila[5],
-                'goles_eqipo_B' => $fila[6]!== '' ? $fila[6] : null,
+                'goles_equipo_B' => $fila[6]!== '' ? $fila[6] : null,
             ]
             );
         }

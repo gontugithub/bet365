@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Prediccion extends Model
 {
-    protected $fillable = ['partido_id','user_id','goles_eqipo_A', 'goles_eqipo_B', 'puntos_ganados'];
+    protected $fillable = ['partido_id','user_id','goles_equipo_A', 'goles_equipo_B', 'puntos_ganados'];
     protected $table = 'predicciones';
 
     public function partido(): BelongsTo

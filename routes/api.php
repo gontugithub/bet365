@@ -15,3 +15,5 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 Route::post('/importar', [PartidoController::class, 'importar'])->middleware(['auth:sanctum', 'ability:admin']);
 Route::get('/partidos', [PartidoController::class, 'index'])->middleware(['auth:sanctum']);
 Route::get('/partidos/fase-actual', [PartidoController::class, 'faseActualPartidos'])->middleware(['auth:sanctum']);
+
+Route::post('/predicciones', [PrediccionController::class, 'store'])->middleware('auth:sanctum');

@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('equipo_B');
             $table->string('fase');
             $table->dateTime('fecha_hora_partido');
-            $table->integer('goles_eqipo_A')->nullable();
-            $table->integer('goles_eqipo_B')->nullable();
+            $table->integer('goles_equipo_A')->nullable();
+            $table->integer('goles_equipo_B')->nullable();
             $table->timestamps();
         });
     }
