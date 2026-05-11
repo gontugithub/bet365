@@ -182,6 +182,7 @@ ADMIN_PASSWORD=tupassword123
 | POST | `/api/comunidades/solicitar` | Auth | Solicitar unirse con código |
 | PUT | `/api/comunidades/{id}/aceptar/{user_id}` | Auth (creador) | Aceptar solicitud |
 | DELETE | `/api/comunidades/{id}/miembros/{user_id}` | Auth (creador) | Eliminar miembro |
+| GET | `/api/comunidades/{id}/ranking` | Auth (miembro) | Ver ranking de la comunidad |
 
 ### Estructura de respuesta uniforme
 
@@ -984,3 +985,127 @@ $comunidad = Comunidad::with('users')->findOrFail($id);
 ```
 
 El **problema N+1** ocurre cuando cargas una colección y accedes a una relación en un bucle — hace una query por cada elemento. `with()` lo soluciona cargando todo de una vez.
+
+
+---
+
+### Sistema de puntuación automático
+
+Los puntos se calculan automáticamente cada vez que el admin importa el CSV con resultados. El método `calcularPuntos()` se llama dentro del bucle de `importarCSV()` justo después de actualizar cada partido.
+
+**Lógica de puntuación:**
+```php
+public function calcularPuntos($partido)
+{
+    // Solo calcular si el partido tiene resultado
+    if (is_null($partido->goles_equipo_A)) return;
+
+    $predicciones = $partido->predicciones;
+
+    // Determinar ganador real (se calcula una sola vez fuera del bucle)
+    if ($partido->goles_equipo_A > $partido->goles_equipo_B) {
+        $ganadorReal = 'A';
+    } elseif ($partido->goles_equipo_B > $partido->goles_equipo_A) {
+        $ganadorReal = 'B';
+    } else {
+        $ganadorReal = 'empate';
+    }
+
+    foreach ($predicciones as $prediccion) {
+        // Determinar ganador predicho
+        if ($prediccion->goles_equipo_A > $prediccion->goles_equipo_B) {
+            $ganadorPredicho = 'A';
+        } elseif ($prediccion->goles_equipo_B > $prediccion->goles_equipo_A) {
+            $ganadorPredicho = 'B';
+        } else {
+            $ganadorPredicho = 'empate';
+        }
+
+        // 3 puntos: resultado exacto
+        // 1 punto: acierta ganador pero no el resultado
+        // 0 puntos: falla
+        if ($ganadorPredicho === $ganadorReal &&
+            $prediccion->goles_equipo_A == $partido->goles_equipo_A &&
+            $prediccion->goles_equipo_B == $partido->goles_equipo_B) {
+            $puntos = 3;
+        } elseif ($ganadorPredicho === $ganadorReal) {
+            $puntos = 1;
+        } else {
+            $puntos = 0;
+        }
+
+        $prediccion->update(['puntos_ganados' => $puntos]);
+    }
+}
+```
+
+> ⚠️ Usar `==` en vez de `===` para comparar los goles porque los valores del CSV vienen como strings y los de la BD como integers. `==` ignora el tipo, `===` no.
+
+---
+
+### Ranking con `map()` y `sum()`
+
+El ranking se construye transformando la colección de miembros con `map()` y calculando la suma de puntos de cada uno con `sum()`.
+
+**`map()`** — transforma cada elemento de una colección en algo nuevo:
+```php
+// Es equivalente a un foreach que devuelve un nuevo array
+$ranking = $miembros->map(function($miembro) {
+    return [
+        'nombre' => $miembro->name,
+        'puntos' => (int) Prediccion::where('user_id', $miembro->id)->sum('puntos_ganados')
+    ];
+});
+```
+
+**`sum('campo')`** — suma todos los valores de un campo:
+```php
+// Suma todos los puntos_ganados del usuario
+Prediccion::where('user_id', $user_id)->sum('puntos_ganados');
+```
+
+**`sortByDesc('campo')`** — ordena la colección de mayor a menor:
+```php
+->sortByDesc('puntos') // ordena por puntos descendente
+->values()             // reindexa el array (0, 1, 2...) después de ordenar
+```
+
+> ⚠️ `sum()` puede devolver un string en vez de un integer. Usa `(int)` para castearlo:
+> ```php
+> 'puntos' => (int) Prediccion::where(...)->sum('puntos_ganados')
+> ```
+
+---
+
+### Seeders avanzados
+
+Para datos de prueba complejos con relaciones entre modelos, es útil crear un seeder específico separado del `DatabaseSeeder`:
+
+```bash
+php artisan make:seeder DatosSeeder
+```
+
+Y llamarlo desde `DatabaseSeeder`:
+```php
+public function run(): void
+{
+    $this->call([
+        DatosSeeder::class,
+    ]);
+}
+```
+
+**Orden importante en los seeders** — respetar las foreign keys:
+```
+1. Crear users primero
+2. Crear comunidades (necesita user existente para creador_id)
+3. Hacer attach() de usuarios a comunidades (necesita ambos)
+4. Crear predicciones (necesita users y partidos existentes)
+```
+
+Si intentas crear una predicción con un `partido_id` que no existe, MySQL lanzará un error de foreign key constraint.
+
+**Ejecutar un seeder específico:**
+```bash
+php artisan db:seed --class=DatosSeeder
+```
