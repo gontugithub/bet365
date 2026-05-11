@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ComunidadController;
 use App\Http\Controllers\PartidoController;
 use App\Http\Controllers\PrediccionController;
 use Illuminate\Http\Request;
@@ -19,3 +20,7 @@ Route::get('/partidos/fase-actual', [PartidoController::class, 'faseActualPartid
 Route::get('/predicciones', [PrediccionController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/predicciones', [PrediccionController::class, 'store'])->middleware('auth:sanctum');
 Route::put('/predicciones/{id}', [PrediccionController::class, 'update'])->middleware('auth:sanctum');
+
+Route::post('/comunidades', [ComunidadController::class, 'store'])->middleware('auth:sanctum');
+Route::post('/comunidades/unirse', [ComunidadController::class, 'solicitar'])->middleware('auth:sanctum');
+

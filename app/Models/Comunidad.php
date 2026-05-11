@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Comunidad extends Model
 {
     protected $fillable = ['nombre', 'codigo', 'creador_id'];
+    protected $table = 'comunidades';
 
     // N:M una comunidad tiene varios usuarios y varios usuarios pertenecen a una comunidad
     public function users(): BelongsToMany
