@@ -22,9 +22,31 @@ class ComunidadService
         }
 
         $comunidad->users()->attach($user_id, ['estado_solicitud' => 'pendiente']);
-        
+
         return ['error' => false, 'data' => $comunidad];
 
+    }
+
+    public function aceptarSolicitud($comunidad_id, $creador_id, $user_id){
+
+        $comunidad = Comunidad::findOrFail($comunidad_id);
+
+        if ($comunidad->creador_id !== $creador_id){
+
+            return ['error' => true, 'message' => 'No eres el creador de esta comunidad', 'code' => 422];
+        }
+
+        $solicitud = $comunidad->users()->where('user_id', $user_id)
+                        ->wherePivot('estado_solicitud', 'pendiente')
+                        ->exists();
+
+        if (!$solicitud){
+            return ['error' => true, 'message' => 'No existe solicitud pendiente para este usuario', 'code' => 404];
+        }
+
+        $comunidad->users()->updateExistingPivot($user_id, ['estado_solicitud' => 'aceptado']);
+
+        return ['error' => false, 'data' => $comunidad];
 
     }
 }

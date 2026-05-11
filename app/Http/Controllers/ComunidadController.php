@@ -60,4 +60,20 @@ class ComunidadController extends Controller
             return $this->successResponse($response['data'], 'Solicitud enviada con exito', 201);
         }
     }
+
+    public function aceptar(Request $request, $comunidad_id, $user_id){
+
+        $service = new ComunidadService;
+
+        $response = $service->aceptarSolicitud($comunidad_id, $request->user()->id, $user_id);
+
+        if ($response['error']){
+            return $this->errorResponse($response['message'], $response['code']);
+
+        } else{
+            return $this->successResponse($response['data'], 'Usuario aceptado', 201);
+        }
+
+
+    }
 }

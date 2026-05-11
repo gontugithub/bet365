@@ -23,4 +23,5 @@ Route::put('/predicciones/{id}', [PrediccionController::class, 'update'])->middl
 
 Route::post('/comunidades', [ComunidadController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/comunidades/unirse', [ComunidadController::class, 'solicitar'])->middleware('auth:sanctum');
+Route::put('/comunidades/{comunidad_id}/aceptar/{user_id}', [ComunidadController::class, 'aceptar'])->middleware('auth:sanctum');
 
