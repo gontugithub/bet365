@@ -21,7 +21,7 @@ class PartidoService
         // ahora entramos en un bucle qeu va ir leyendo cada fila, tambien hacemos del tiron el update y el crear partidos
         // con updateOrCreate busco primero si existe si existe actualiza y sino los crea
         while (($fila = fgetcsv($handle)) !== false) {
-           $partidos[] = Partido::updateOrCreate(['id_event' => $fila[0]],[
+           $partido = Partido::updateOrCreate(['id_event' => $fila[0]],[
                 'id_event' => $fila[0],
                 'fecha_hora_partido' => $fila[1],
                 'fase' => $fila[2],
@@ -32,11 +32,56 @@ class PartidoService
                 'goles_equipo_B' => $fila[6]!== '' ? $fila[6] : null,
             ]
             );
+
+            // calculo los puntos, y actualizo el campo puntos_ganados
+            $this->calcularPuntos($partido);
+            $partidos[] = $partido; // voy guardando partidos idnividualmente despues de guardarlos de uno en uno.
         }
 
         fclose($handle);
         return $partidos;
 
+    }
+
+    public function calcularPuntos($partido){
+
+        // si no hay resultado
+        if (is_null($partido->goles_equipo_A)) return;
+
+        $predicciones = $partido->predicciones;
+
         
+        if ($partido->goles_equipo_A > $partido->goles_equipo_B) {
+            $ganadorReal = 'A';
+        } elseif ($partido->goles_equipo_B > $partido->goles_equipo_A) {
+            $ganadorReal = 'B';
+        } else {
+            $ganadorReal = 'empate';
+        }
+
+        foreach ($predicciones as $prediccion) {
+            // Determinar ganador predicho
+            if ($prediccion->goles_equipo_A > $prediccion->goles_equipo_B) {
+                $ganadorPredicho = 'A';
+            } elseif ($prediccion->goles_equipo_B > $prediccion->goles_equipo_A) {
+                $ganadorPredicho = 'B';
+            } else {
+                $ganadorPredicho = 'empate';
+            }
+
+            // Calcular puntos
+            if ($ganadorPredicho === $ganadorReal && 
+            $prediccion->goles_equipo_A == $partido->goles_equipo_A && 
+            $prediccion->goles_equipo_B == $partido->goles_equipo_B ) {
+                $puntos = 3;
+            } elseif ($ganadorPredicho === $ganadorReal) {
+                $puntos = 1;
+            } else {
+                $puntos = 0;
+            }
+
+            $prediccion->update(['puntos_ganados' => $puntos]);
+
+        }
     }
 }
