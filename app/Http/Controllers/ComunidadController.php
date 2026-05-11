@@ -76,4 +76,41 @@ class ComunidadController extends Controller
 
 
     }
+
+    public function eliminar(Request $request, $comunidad_id, $user_id){
+
+        $service = new ComunidadService;
+
+        $response = $service->eliminarMiembro($comunidad_id, $request->user()->id, $user_id);
+
+        if ($response['error']){
+            return $this->errorResponse($response['message'], $response['code']);
+
+        } else{
+            return $this->successResponse($response['data'], 'Usuario eliminado', 200);
+        }
+
+
+    }
+
+    public function show(Request $request, $comunidad_id){
+
+        $comunidad = Comunidad::with('users')->findOrFail($comunidad_id);
+
+        $esMiembro = $comunidad->users()
+                ->where('user_id', $request->user()->id)
+                ->wherePivot('estado_solicitud', 'aceptado')
+                ->exists();
+
+        $esCreador = $comunidad->creador_id === $request->user()->id;
+
+        if (!$esMiembro && !$esCreador) {
+            return $this->errorResponse('No tienes acceso a esta comunidad', 403);
+        }
+
+        return $this->successResponse($comunidad, 'Comunidad encontrada', 200);
+    }
+    
+
+
 }

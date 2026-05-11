@@ -49,4 +49,26 @@ class ComunidadService
         return ['error' => false, 'data' => $comunidad];
 
     }
+
+    public function eliminarMiembro($comunidad_id, $creador_id, $user_id){
+
+        $comunidad = Comunidad::findOrFail($comunidad_id);
+
+        if ($comunidad->creador_id !== $creador_id) {
+            return ['error' => true, 'message' => 'No eres el creador de esta comunidad', 'code' => 403];
+        }
+
+        $esmiembro = $comunidad->users()
+                        ->where('user_id', $user_id)
+                        ->wherePivot('estado_solicitud', 'aceptado')
+                        ->exists();
+
+        if (!$esmiembro) {
+            return ['error' => true, 'message' => 'Este usuario no es miembro de la comunidad', 'code' => 404];
+        }
+
+        $comunidad->users()->detach($user_id);
+
+        return ['error' => false, 'data' => null];
+    }
 }
