@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Partido;
+use App\Models\Prediccion;
 use App\Services\PrediccionService;
 use App\Traits\TraitApiResponse;
 use Illuminate\Http\Request;
@@ -61,6 +62,14 @@ class PrediccionController extends Controller
             return $this->successResponse($response['data'], 'Predicción actualizada', 201);
         }
 
+
+    }
+
+    public function index(Request $request){
+
+        $predicciones = Prediccion::query()->where('user_id', $request->user()->id)->get();
+
+        return $this->successResponse($predicciones, 'Predicciones encontradas: '. $predicciones->count(),200);
 
     }
     
